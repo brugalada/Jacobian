@@ -46,8 +46,6 @@ def Jacob(x):
         x[3]: proper motion (mualpha*) -> mas/yr
         x[4]: proper motion (mudelta) -> mas/yr
         x[5]: radial velocity -> km/s
-        x[6]: galactic longitude -> degrees
-        x[7]: galactic latitude -> degrees
     """
     
     #inicialization
