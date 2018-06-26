@@ -4,6 +4,7 @@ This two pieces of code are a translation into Python of a Fortran routine imple
 
 ## Jacobian
 Returns the Jacobian of the transformation from ICRS to l,b,plx,U,V,W (6x6 matrix).   
+
     Input: x (iterable)
         x[0]: right ascention (equatorial) -> degrees
         x[1]: declination (equatorial) -> degrees
@@ -23,6 +24,7 @@ Returns the Jacobian of the transformation from ICRS to l,b,plx,U,V,W but
     the lines where the elements of the Jacobian are calculated, as well as 
     changing the sizes of such Jacobians at inicialization and including 'jac1' in
     the final matrix product chain.
+    
     Input: x (iterable)
         x[0]: right ascention (equatorial) -> degrees
         x[1]: declination (equatorial) -> degrees
