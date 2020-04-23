@@ -18,6 +18,8 @@ deo=np.deg2rad(27.12825111)     #dec NGP
 alpm=np.deg2rad(192.8594813)    #RA NGP
 theta=np.deg2rad(122.93680516)  #londitude NCP
 const=4.7404705                 #conversion factor km·yr/s
+cdeo=np.cos(deo); sdeo=np.sin(deo)
+cincl=np.cos(incl); sincl=np.sin(incl)
 
 def radec2lb(ra,dec):
     """
@@ -46,7 +48,7 @@ def pmradec2lb(ra,dec,l,b,mua,mud):
     
     return mua*cophi+mud*siphi,-mua*siphi+mud*cophi
 
-def Jacob(x):
+def Jacob(x,_all=False):
     """
     Returns the Jacobian of the transformation from ICRS to l,b,plx,U,V,W.
     The input parameters is an iterator of the form:
@@ -65,7 +67,12 @@ def Jacob(x):
     jac3=np.zeros([6,6])
     #RA & DEC in degrees
     a=np.deg2rad(x[0])
+    calom=np.cos(a-alom); salom=np.sin(a-alom); talom=np.tan(a-alom)
+    salpm=np.sin(a-alpm)
+    ca=np.cos(a); sa=np.sin(a)
     d=np.deg2rad(x[1])
+    cd=np.cos(d);sd=np.sin(d);tand=np.tan(d)
+    
     #Parallax in mas
     w=x[2]
     #proper motion in mas/yr
@@ -74,15 +81,23 @@ def Jacob(x):
     #radial velocity along l.o.s. in km/s
     vrad=x[5]
     #galactic coordinates in degrees
-    l,b=radec2lb(a,d)
+    sb=sd*cincl-cd*sincl*salom
+    b=np.arcsin(sb)
+    #longitude
+    sl=(sd*sincl+cd*cincl*salom)/cd
+    cl=cd*calom/cd
+    l=np.arctan2(sl,cl)+lom
+    l=np.where(l>=0,l,l+2*np.pi)
 
-    cd=np.cos(d);sd=np.sin(d);tand=np.tan(d)
-    cb=np.cos(b); sb=np.sin(b);tanb=np.tan(b)
-    cl=np.cos(l); sl=np.sin(l)
-    cdeo=np.cos(deo); sdeo=np.sin(deo)
-    cincl=np.cos(incl); sincl=np.sin(incl)
-    calom=np.cos(a-alom); salom=np.sin(a-alom); talom=np.tan(a-alom)
+    cb=np.cos(b);tanb=np.tan(b)
     clt=np.cos(l-theta); slt=np.sin(l-theta)
+    
+    #pml, pmb
+    siphi=cdeo*salpm/cb
+    cophi=(sdeo-sd*sb)/(cd*cb)
+    
+    ml=mua*cophi+mud*siphi
+    mb=-mua*siphi+mud*cophi
     
     #units
     jac0[0,0]=np.pi/180/3600
@@ -166,9 +181,6 @@ def Jacob(x):
     jac2[5,5]=1
     
     
-    "calculating ml and mb"
-    
-    ml,mb=pmradec2lb(a,d,l,b,mua,mud)
     
     #ml/mb -> uvw
     
@@ -228,11 +240,13 @@ def Jacob(x):
     #W-vrad
     jac3[5,5]=sb
     
-    
-    return np.dot(jac3,np.dot(jac2,np.dot(jac1,jac0)))
+    if _all:
+        return np.dot(jac3,np.dot(jac2,np.dot(jac1,jac0))),(l,b,ml,mb)
+    else:
+        return np.dot(jac3,np.dot(jac2,np.dot(jac1,jac0)))
 
 
-def Jacob4(x):
+def Jacob4(x,_all=False):
     """
     Returns the Jacobian (4x4) of the transformation from ICRS to l,b,plx,U,V,W, ignoring positional errors
     to increase speed.
@@ -252,7 +266,12 @@ def Jacob4(x):
     jac3=np.zeros([4,4])
     #RA & DEC in degrees
     a=np.deg2rad(x[0])
+    calom=np.cos(a-alom); salom=np.sin(a-alom); talom=np.tan(a-alom)
+    salpm=np.sin(a-alpm)
+    ca=np.cos(a); sa=np.sin(a)
     d=np.deg2rad(x[1])
+    cd=np.cos(d);sd=np.sin(d);tand=np.tan(d)
+    
     #Parallax in mas
     w=x[2]
     #proper motion in mas/yr
@@ -261,15 +280,23 @@ def Jacob4(x):
     #radial velocity along l.o.s. in km/s
     vrad=x[5]
     #galactic coordinates in degrees
-    l,b=radec2lb(a,d)
+    sb=sd*cincl-cd*sincl*salom
+    b=np.arcsin(sb)
+    #longitude
+    sl=(sd*sincl+cd*cincl*salom)/cd
+    cl=cd*calom/cd
+    l=np.arctan2(sl,cl)+lom
+    l=np.where(l>=0,l,l+2*np.pi)
 
-    cd=np.cos(d);sd=np.sin(d);tand=np.tan(d)
-    cb=np.cos(b); sb=np.sin(b);tanb=np.tan(b)
-    cl=np.cos(l); sl=np.sin(l)
-    cdeo=np.cos(deo); sdeo=np.sin(deo)
-    cincl=np.cos(incl); sincl=np.sin(incl)
-    calom=np.cos(a-alom); salom=np.sin(a-alom); talom=np.tan(a-alom)
+    cb=np.cos(b);tanb=np.tan(b)
     clt=np.cos(l-theta); slt=np.sin(l-theta)
+    
+    #pml, pmb
+    siphi=cdeo*salpm/cb
+    cophi=(sdeo-sd*sb)/(cd*cb)
+    
+    ml=mua*cophi+mud*siphi
+    mb=-mua*siphi+mud*cophi
     
     #mas -> rad
     jac0[0,0]=1 #par
@@ -299,9 +326,6 @@ def Jacob4(x):
     jac2[3,3]=1
     
     
-    "calculating ml and mb"
-    
-    ml,mb=pmradec2lb(a,d,l,b,mua,mud)
     
     #ml/mb -> uvw
     
@@ -343,5 +367,116 @@ def Jacob4(x):
     #W-vrad
     jac3[3,3]=sb        
     
-    return np.dot(jac3,np.dot(jac2,jac0))
+    if _all:
+        return np.dot(jac3,np.dot(jac2,jac0)),(l,b,ml,mb)
+    else:
+        return np.dot(jac3,np.dot(jac2,jac0))
+    
+    
+    
+def Jacob4_tan(x,_all=False):
+    """
+    Returns the Jacobian (4x4) of the transformation from ICRS to l,b,plx,vl,vb,vlos, ignoring positional errors to increase speed.
+    The input parameters is an iterator of the form:
+        x[0]: right ascention (equatorial) -> degrees
+        x[1]: declination (equatorial) -> degrees
+        x[2]: parallax -> mas
+        x[3]: proper motion (mualpha*) -> mas/yr
+        x[4]: proper motion (mudelta) -> mas/yr
+        x[5]: radial velocity -> km/s
+    """
+    
+    #inicialization
+    jac0=np.zeros([4,4])
+    #jac1=np.zeros([4,4])
+    jac2=np.zeros([4,4])
+    jac3=np.zeros([4,4])
+    #RA & DEC in degrees
+    a=np.deg2rad(x[0])
+    calom=np.cos(a-alom); salom=np.sin(a-alom); talom=np.tan(a-alom)
+    salpm=np.sin(a-alpm)
+    ca=np.cos(a); sa=np.sin(a)
+    d=np.deg2rad(x[1])
+    cd=np.cos(d);sd=np.sin(d);tand=np.tan(d)
+    
+    #Parallax in mas
+    w=x[2]
+    #proper motion in mas/yr
+    mua=x[3]
+    mud=x[4]
+    #radial velocity along l.o.s. in km/s
+    vrad=x[5]
+    #galactic coordinates in degrees
+    sb=sd*cincl-cd*sincl*salom
+    b=np.arcsin(sb)
+    #longitude
+    sl=(sd*sincl+cd*cincl*salom)/cd
+    cl=cd*calom/cd
+    l=np.arctan2(sl,cl)+lom
+    l=np.where(l>=0,l,l+2*np.pi)
+
+    cb=np.cos(b);tanb=np.tan(b)
+    clt=np.cos(l-theta); slt=np.sin(l-theta)
+    
+    #pml, pmb
+    siphi=cdeo*salpm/cb
+    cophi=(sdeo-sd*sb)/(cd*cb)
+    
+    ml=mua*cophi+mud*siphi
+    mb=-mua*siphi+mud*cophi
+    
+    #mas -> rad
+    jac0[0,0]=1 #par
+    jac0[1,1]=1 #pmra
+    jac0[2,2]=1 #pmdec
+    jac0[3,3]=1 #vr
+    
+    #from mua/mub to mul/mub
+    
+    #par-par
+    jac2[0,0]=1
+    
+    #ml-mua
+    jac2[1,1]=(1/(cb)*(sdeo-sb*(cb*cdeo*clt+sb*sdeo)))/(1-(cb*cdeo*clt+sb*sdeo)**2)**(0.5)
+    
+    #ml-mud
+    jac2[1,2]=-((cdeo*slt)/(1-(cb*cdeo*clt+sb*sdeo)**2)**(0.5))
+    
+    
+    #mb-mua
+    jac2[2,1]=(cdeo*slt)/(1-(cb*cdeo*clt+sb*sdeo)**2)**(0.5)
+         
+    #mb-mud
+    jac2[2,2]=(1/(cb)*(sdeo-sb*(cb*cdeo*clt+sb*sdeo)))/(1-(cb*cdeo*clt+sb*sdeo)**2)**(0.5)
+    
+    #vrad-vrad
+    jac2[3,3]=1
+    
+    
+    
+    #ml/mb -> vl,vb
+
+    #par-par
+    jac3[0,0]=1
+    
+    #vl-par
+    jac3[1,0]=-(const*ml)/w**2
+    
+    #vl-ml
+    jac3[1,1]=((const)/w)
+      
+    
+    #vb-par
+    jac3[2,0]=-(const*mb)/w**2
+    
+    #vb-mb
+    jac3[2,2]=((const)/w)
+
+    #vrad-vrad
+    jac3[3,3]=1        
+
+    if _all:
+        return np.dot(jac3,np.dot(jac2,jac0)),(np.rad2deg(l),np.rad2deg(b),ml,mb)
+    else:
+        return np.dot(jac3,np.dot(jac2,jac0))
     
