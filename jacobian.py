@@ -11,13 +11,17 @@ import numpy as np
 
 
 #constants
-incl=np.deg2rad(62.87124882)    #inclination of galactic plane
-alom=np.deg2rad(282.8594813)    #RA of the equatorial node
-lom=np.deg2rad(32.93680516)     #longitude gal of Ascending node of the galactic equator
-deo=np.deg2rad(27.12825111)     #dec NGP 
-alpm=np.deg2rad(192.8594813)    #RA NGP
-theta=np.deg2rad(122.93680516)  #londitude NCP
-const=4.7404705                 #conversion factor km·yr/s
+incl=np.deg2rad(62.87175)       #inclination of galactic plane (Hipparcos book)
+alom=np.deg2rad(282.859481)     #RA of the equatorial node (Hipparcos book)
+lom=np.deg2rad(32.93192)        #longitude gal of Ascending node of the galactic equator (Hipparcos Explanatory Vol 1 section 1.5, and Murray, 1983, section 10.2)
+deo=np.deg2rad(27.12825)        #dec NGP (Hipparcos Explanatory Vol 1 section 1.5, and Murray, 1983, section 10.2)
+alpm=np.deg2rad(192.859481)     #RA NGP (Hipparcos Explanatory Vol 1 section 1.5, and Murray, 1983, section 10.2)
+theta=np.deg2rad(122.93192)     #londitude NCP (Hipparcos book)
+
+auInMeter = 149597870700.0     #Astronomical Unit in meter, IAU constant and defining length
+julianYearSeconds = 365.25 * 86400.0 #Number of seconds in Julian year
+const = auInMeter/(julianYearSeconds*1000.0) #AU expressed in km*yr/s (conversion factor km·yr/s)
+               
 cdeo=np.cos(deo); sdeo=np.sin(deo)
 cincl=np.cos(incl); sincl=np.sin(incl)
 
@@ -476,7 +480,7 @@ def Jacob4_tan(x,_all=False):
     jac3[3,3]=1        
 
     if _all:
-        return np.dot(jac3,np.dot(jac2,jac0)),(np.rad2deg(l),np.rad2deg(b),ml,mb)
+        return np.dot(jac3,np.dot(jac2,jac0)),(l,b,ml,mb)
     else:
         return np.dot(jac3,np.dot(jac2,jac0))
     
